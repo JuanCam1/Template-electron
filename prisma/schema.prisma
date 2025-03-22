@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Builder {
+  id         Int          @id @default(autoincrement())
+  name       String       @unique
+  apartments Apartament[] @relation("apartBuilder")
+}
+
+model Apartament {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  builderId Int
+  builder   Builder    @relation("apartBuilder", fields: [builderId], references: [id])
+  residents Resident[] @relation("apartResident")
+  visits    Visit[]    @relation("apartVisit")
+
+  @@unique([builderId, name])
+}
+
+model TypeVehicle {
+  id       Int       @id @default(autoincrement())
+  type     String    @unique
+  vehicles Vehicle[] @relation("TypeVehVehicle")
+}
+
+model Vehicle {
+  id           Int               @id @default(autoincrement())
+  licensePlate String            @unique
+  description  String?
+  typeId       Int
+  type         TypeVehicle       @relation("TypeVehVehicle", fields: [typeId], references: [id])
+  owners       VehicleResident[] @relation("vehicleResidentVehicle")
+}
+
+model TypeDocument {
+  id        Int        @id @default(autoincrement())
+  type      String     @unique
+  residents Resident[] @relation("TypeDocumentResident")
+}
+
+model State {
+  id               Int               @id @default(autoincrement())
+  state            String            @unique @default("Activo")
+  residents        Resident[]        @relation("StateResident")
+  visit            Visit[]           @relation("StateVisita")
+  user             User[]            @relation("StateUser")
+  vehicleResidents VehicleResident[] @relation("StateVehResident")
+}
+
+model Resident {
+  id             Int               @id @default(autoincrement())
+  name           String
+  idCard         String            @unique
+  phone          String
+  documentTypeId Int
+  documentType   TypeDocument      @relation("TypeDocumentResident", fields: [documentTypeId], references: [id])
+  stateId        Int
+  state          State             @relation("StateResident", fields: [stateId], references: [id])
+  apartmentId    Int
+  apartment      Apartament        @relation("apartResident", fields: [apartmentId], references: [id])
+  visits         Visit[]           @relation("visitResident")
+  vehicles       VehicleResident[] @relation("vehicleResidentResidente")
+
+  @@index([idCard, name])
+}
+
+model VehicleResident {
+  id         Int      @id @default(autoincrement())
+  vehicleId  Int
+  vehicle    Vehicle  @relation("vehicleResidentVehicle", fields: [vehicleId], references: [id])
+  residentId Int
+  resident   Resident @relation("vehicleResidentResidente", fields: [residentId], references: [id])
+  stateId    Int
+  state      State    @relation("StateVehResident", fields: [stateId], references: [id])
+
+  @@unique([vehicleId, residentId])
+}
+
+model Visitant {
+  id     Int     @id @default(autoincrement())
+  name   String
+  idCard String  @unique
+  photo  String
+  visits Visit[] @relation("visitVisitant")
+}
+
+model Visit {
+  id           Int        @id @default(autoincrement())
+  dateEntry    DateTime
+  timeEntry    String
+  dateExit     DateTime?
+  timeExit     String?
+  observation  String?
+  stateId      Int
+  state        State      @relation("StateVisita", fields: [stateId], references: [id])
+  apartmentId  Int
+  apartment    Apartament @relation("apartVisit", fields: [apartmentId], references: [id])
+  authorizerId Int
+  authorizer   Resident   @relation("visitResident", fields: [authorizerId], references: [id])
+  visitantId   Int
+  visitant     Visitant   @relation("visitVisitant", fields: [visitantId], references: [id])
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] @relation("RoleUsuarios")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  password String
+  roleId   Int
+  role     Role     @relation("RoleUsuarios", fields: [roleId], references: [id])
+  sessions Sesion[] @relation("SesionUsuario")
+  stateId  Int
+  state    State    @relation("StateUser", fields: [stateId], references: [id])
+}
+
+model Sesion {
+  id     Int     @id @default(autoincrement())
+  token  String? @unique
+  userId Int
+  user   User    @relation("SesionUsuario", fields: [userId], references: [id])
+}
+
+model Configuration {
+  id                     Int    @id @default(autoincrement())
+  theme                  String @default("light")
+  builderType            String @default("Torre")
+  maxVehiclesPerResident Int    @default(2)
+}
